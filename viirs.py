@@ -7,8 +7,6 @@ import pandas
 import glob
 import shapely
 import geopandas
-from osgeo import gdal
-from osgeo import osr
 
 utc = pytz.timezone('UTC')
 
@@ -76,23 +74,7 @@ class VIIRSNC:
         df = geopandas.GeoDataFrame(df, geometry='geometry')
         df.to_file(file_name, driver="GPKG")
 
-    def to_tiff(self, tiff_name):
-        nx = self.data.shape[0]
-        ny = self.data.shape[1]
-        xmin, ymin, xmax, ymax = [self.lons.min(), self.lats.min(), self.lons.max(), self.lats.max()]
-        xres = (xmax - xmin) / float(nx)
-        yres = (ymax - ymin) / float(ny)
-        geotransform = (xmin, xres, 0, ymax, 0, -yres)
-        dst_ds = gdal.GetDriverByName('GTiff').Create(tiff_name, ny, nx, 1, gdal.GDT_Float32)
-        dst_ds.SetGeoTransform(geotransform)    # specify coords
-        srs = osr.SpatialReference()            # establish encoding
-        srs.ImportFromEPSG(4326)                # WGS84 lat/long
-        dst_ds.SetProjection(srs.ExportToWkt()) # export coords to file
-        dst_ds.GetRasterBand(1).WriteArray(self.data)   # write r-band to the raster
-        dst_ds.FlushCache()                     # write to disk
-        dst_ds = None                           # save, close
-
-    def to_tiff_raserio(self, tiff_name, bbox):
+    def to_tiff(self, tiff_name, bbox):
         mask = self.make_mask(bbox)
         clipped = mask * self.data
         clipped = clipped[~numpy.all(clipped==0, axis=1)]
