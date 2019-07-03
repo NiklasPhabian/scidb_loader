@@ -61,7 +61,6 @@ class VIIRSNC:
 
     def to_df(self, bbox=None, n_rows=None, n_cols=None):
         mask = self.make_mask(bbox, n_rows, n_cols)
-        print(mask)
         data_dict = {}
         data_dict[self.data_name] = self.data[mask]
         data_dict['time_stamp'] = self.time_stamp
