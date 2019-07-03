@@ -11,7 +11,7 @@ def nc2tsv(nv_file, tsv_file):
     
     
 def tsv2array(tsv_file, array):
-    iquery = "store(aio_input('{tsv_file}', num_attributes:3, '{array}')".format(tsv_file=tsv_file, array=array)
+    iquery = '"store(aio_input(\'{tsv_file}\', num_attributes:3), {array})"'.format(tsv_file=tsv_file, array=array)
     print(iquery)
     subprocess.check_output(['iquery', '-anq', iquery])
 
