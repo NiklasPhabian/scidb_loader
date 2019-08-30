@@ -8,9 +8,9 @@ class Array:
         self.temp = temp
         
     def exists(self):        
-        arrays = db.iquery("list('arrays')", fetch=True)
+        arrays = self.db.iquery("list('arrays')", fetch=True)
         names = arrays['name'].values
-        exists = self.name in names
+        exists = self.name in names        
         return exists
     
     def max_version(self):
@@ -46,9 +46,8 @@ class Array:
     def head(self):    
         return scidbpy.db.Array(db=self.db, name=self.name).head()
         
-    def from_numpy(self, numpy_array):         
-        print(numpy_array.dtype.names)
-        self.db.input('<csc:float, lat:float, lon:float>[i]', upload_data=numpy_array).store(self.name)
+    def from_numpy(self, numpy_array):                 
+        self.db.input(upload_data=numpy_array).store(self.name)
         
     def from_tsv_aio(self, tsv_path):   
         query = '''store(
@@ -65,7 +64,7 @@ class Array:
         query = '''store(
                         apply(
                             {array}, 
-                            stare_spatial, stareFromLevelLatLon(23, lat, lon)), 
+                            stare_spatial, stareFromResolutionLatLon(23, lat, lon)), 
                         tmp)'''
         query = query.format(array=self.name)
         self.db.iquery(query)
@@ -76,13 +75,13 @@ class Array:
         query = '''store(
                         apply(
                             {array}, 
-                            stare_temporal, stareFromUTCDateTime(time_stamp, 3)), 
+                            stare_temporal, stareFromUTCDateTime(3, time_stamp)), 
                         tmp)'''
         query = query.format(array=self.name)
         self.db.iquery(query)
         self.db.iquery('remove({array})'.format(array=self.name))
         self.db.iquery('rename(tmp, {array})'.format(array=self.name))
-        
+
     def redimension(self, attributes, dimensions):
         query = '''store(
                         redimension(
@@ -93,6 +92,18 @@ class Array:
         self.db.iquery(query)
         self.db.iquery('remove({array})'.format(array=self.name))
         self.db.iquery('rename(tmp, {array})'.format(array=self.name)) 
+    
+    def insert_into(self, target_array):
+        query = '''insert(
+                        redimension(
+                            {array}, 
+                            {attributes}{dimensions}), 
+                        {target_name})'''
+        query=query.format(array=self.name, 
+                           target_name=target_array.name, 
+                           attributes=target_array.attributes, 
+                           dimensions=target_array.dimensions)
+        self.db.iquery(query)
         
     def replace_attributes(self):
         query = '''store(
@@ -104,7 +115,7 @@ class Array:
                                 csc, dcast(a2, float(null))),
                             a0, a1), a2, a3), a4, error),
                         tmp)'''
-        query=query.format(array=self.name)
+        query=query.format(array=self.name)        
         self.db.iquery(query)
         self.db.iquery('remove({array})'.format(array=self.name))
         self.db.iquery('rename(tmp, {array})'.format(array=self.name))
@@ -115,13 +126,20 @@ class Cldmsk(Array):
     def __init__(self, db):
         name = 'cldmsk'
         Array.__init__(self, name=name, db=db)
-        self.attributes = "<Clear_Sky_Confidence:float, Cloud_Mask:int8, Integer_Cloud_Mask:int16>"
-        self.dimensions = '''[stare_spatial={low}:{high}:{overlap}:{chunk_length}; synth=0:4]
-                             [stare_temporal={low}:{high}:{overlap}:{chunk_length}; synth=0:4]'''
-        self.dimensions = self.dimensions.format(low=0, high='*', overlap=0, chunk_length=500000)
+        spatial_chunk = 1000*1000*1000*1000*1000
+        
+
+        temporal_chunk = '*'        
+        self.attributes = "<time_stamp:datetime NOT NULL, Clear_Sky_Confidence:float NOT NULL, Integer_Cloud_Mask:int8 NOT NULL, lat:double NOT NULL, lon:double NOT NULL>"                
+        self.attributes = '<Clear_Sky_Confidence:float NOT NULL, Integer_Cloud_Mask:int8 NOT NULL>'
+        self.dimensions = '''[stare_spatial={low}:{high}:{overlap}:{spatial_chunk},
+                              stare_temporal={low}:{high}:{overlap}:{temporal_chunk}]'''        
+        self.dimensions = self.dimensions.format(low=0, 
+                                                 high='*', 
+                                                 spatial_chunk=spatial_chunk,                                                  
+                                                 temporal_chunk=temporal_chunk,                                                  
+                                                 overlap=0)
 
 
-class DNB(Array):
 
-
-
+#store(redimension(test, <lat:double NOT NULL, lon:double NOT NULL>[stare_spatial=0:*:0:1000000000000;synth=0:4]),c)
