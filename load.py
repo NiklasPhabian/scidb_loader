@@ -1,6 +1,7 @@
 import viirs
 import subprocess
 import argparse
+import os
 
 
 def nc2tsv(nv_file, tsv_file):
@@ -11,9 +12,16 @@ def nc2tsv(nv_file, tsv_file):
     
     
 def tsv2array(tsv_file, array):
-    iquery = '"store(aio_input(\'{tsv_file}\', num_attributes:3), {array})"'.format(tsv_file=tsv_file, array=array)
+    iquery = "store(aio_input('{tsv_file}', num_attributes:3), {array})"
+    iquery = "store(apply("\
+	       "aio_input('{tsv_file}', num_attributes:5),"\
+               "lat, dcast(a3, float(null)), " \
+               "lon, dcast(a4, float(null)), " \
+               "csc, dcast(a2, float(null))  " \
+               "), {array});"
+    iquery = iquery.format(tsv_file=tsv_file, array=array)
     print(iquery)
-    subprocess.check_output(['iquery', '-anq', iquery])
+    subprocess.run(['iquery', '-anq', iquery])
 
 
 if __name__ == '__main__':
@@ -22,6 +30,9 @@ if __name__ == '__main__':
     parser.add_argument('--array', metavar='array', nargs='?', type=str, help='Destination array', default='.')
     args = parser.parse_args()    
     
-    #nc2tsv(nv_file=args.file, tsv_file='tmp.tsv')
-    tsv2array(tsv_file='tmp.tsv', array=args.array)
+    nc_file = args.file    
+    tsv_file = '.'.join(nc_file.split('.')[:-1]) + '.tsv'
     
+    #nc2tsv(nv_file=args.file, tsv_file=tsv_file)
+    tsv2array(tsv_file=tsv_file, array=args.array)
+    #ios.remove(tsv_file)    
