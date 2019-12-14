@@ -133,7 +133,8 @@ class Cldmsk(Array):
         self.attributes = "<time_stamp:datetime NOT NULL, Clear_Sky_Confidence:float NOT NULL, Integer_Cloud_Mask:int8 NOT NULL, lat:double NOT NULL, lon:double NOT NULL>"                
         self.attributes = '<Clear_Sky_Confidence:float NOT NULL, Integer_Cloud_Mask:int8 NOT NULL>'
         self.dimensions = '''[stare_spatial={low}:{high}:{overlap}:{spatial_chunk},
-                              stare_temporal={low}:{high}:{overlap}:{temporal_chunk}]'''        
+                              stare_temporal={low}:{high}:{overlap}:{temporal_chunk},
+                              synth=0:3]'''        
         self.dimensions = self.dimensions.format(low=0, 
                                                  high='*', 
                                                  spatial_chunk=spatial_chunk,                                                  
