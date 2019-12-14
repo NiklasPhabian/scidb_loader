@@ -8,7 +8,7 @@ import glob
 import shapely
 import geopandas
 import sys
-sys.path.insert(1, '/home/griessbaum/Dropbox/UCSB/STARE_Project/STARE_build/src/')
+sys.path.insert(1, '/home/griessbaum/STARE/src/')
 import pystare
 
 
