@@ -5,8 +5,6 @@ import scidb
 import glob
 import sys
 import eta
-sys.path.insert(1, '/home/griessbaum/Dropbox/UCSB/STARE_Project/STARE_build/src/')
-import pystare
 
 db = scidbpy.db.DB(scidb_url='http://schiss.duckdns.org:8080/')
 load_array = scidb.Array(name='load_array', db=db)
@@ -23,7 +21,7 @@ def load_file(nc_path):
     
     load_array.remove()    
     load_array.from_numpy(np)
-    load_array.add_stare_spatial() 
+    load_array.add_stare_spatial(resolution=27) 
     load_array.insert_into(cldmsk)    
     print(cldmsk.head())
     
@@ -39,7 +37,7 @@ if __name__ == '__main__':
     #nc_path = '/download/viirs/cldmsk/CLDMSK_L2_VIIRS_SNPP.A2016315.2306.001.2019071184303.nc'
       
     
-    folder = '/home/griessbaum/'   
+    folder = '/download/viirs/cldmsk/'   
     files = sorted(glob.glob(folder+'*.nc'))
     eta = eta.ETA(n_tot=len(files))
     for nc_path in files:

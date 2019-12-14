@@ -60,13 +60,13 @@ class Array:
         query = query.format(array=self.name, tsv_file=tsv_path)  
         self.db.iquery(query) 
         
-    def add_stare_spatial(self):
+    def add_stare_spatial(self, resolution=23):
         query = '''store(
                         apply(
                             {array}, 
-                            stare_spatial, stareFromResolutionLatLon(23, lat, lon)), 
+                            stare_spatial, stareFromResolutionLatLon({resolution}, lat, lon)), 
                         tmp)'''
-        query = query.format(array=self.name)
+        query = query.format(resolution=resolution, array=self.name)
         self.db.iquery(query)
         self.db.iquery('remove({array})'.format(array=self.name))
         self.db.iquery('rename(tmp, {array})'.format(array=self.name))
