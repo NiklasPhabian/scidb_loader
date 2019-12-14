@@ -7,8 +7,10 @@ import pandas
 import glob
 import shapely
 import geopandas
+import sys
+sys.path.insert(1, '/home/griessbaum/Dropbox/UCSB/STARE_Project/STARE_build/src/')
+import pystare
 
-utc = pytz.timezone('UTC')
 
 
 class VIIRSNC:
@@ -57,18 +59,20 @@ class VIIRSNC:
 
     def read_timestamp(self):
         data_netcdf = netCDF4.Dataset(self.file_name, 'r', format='NETCDF4')
-        timestamp_string = data_netcdf.time_coverage_start
-        self.time_stamp =  datetime.datetime.strptime(timestamp_string, '%Y-%m-%dT%H:%M:%S.%fZ')
-        self.time_stamp = utc.localize(self.time_stamp)
+        timestamp_string = data_netcdf.time_coverage_start        
+        self.time_stamp =  datetime.datetime.strptime(timestamp_string, '%Y-%m-%dT%H:%M:%S.%fZ')        
         return self.time_stamp
 
     def to_df(self, bbox=None, n_rows=None, n_cols=None):
         mask = self.make_mask(bbox, n_rows, n_cols)
-        data_dict = self.data
+        data_dict = {}        
+        data_dict.update(self.data)                
+        data_dict['lat'] = self.lats
+        data_dict['lon'] = self.lons
+        for key in data_dict:            
+            data_dict[key] = data_dict[key][mask]        
         data_dict['time_stamp'] = self.time_stamp
-        data_dict['lat'] = self.lats[mask]
-        data_dict['lon'] = self.lons[mask]
-        df = pandas.DataFrame(data_dict)
+        df = pandas.DataFrame(data_dict)   
         return df
     
     def make_tsv_path(self):
@@ -95,16 +99,24 @@ class VIIRSNC:
         mask = self.make_mask(bbox, n_rows, n_cols)        
         time_stamps = numpy.full(shape=self.lats[mask].shape, fill_value=self.time_stamp, dtype='datetime64[s]')                        
         data = [self.lats[mask], self.lons[mask], time_stamps]        
-        names = ['lat', 'lon', 'time_stamp'] 
-        formats = ['f8, f8', 'datetime64[s]']        
-        for data_name in self.data_names:
+        names = ['lat', 'lon', 'time_stamp']
+        data_types = ['f8, f8', 'datetime64[s]']
+        for data_name in self.data:
             data.append(self.data[data_name][mask])        
             names.append(data_name)
-            formats.append(str(self.data_types[data_name]))        
+            data_types.append(str(self.data_types[data_name]))        
         names = ', '.join(names)
-        formats = ', '.join(formats)        
-        ar = numpy.core.records.fromarrays(data, names=names, formats=formats)        
+        data_types = ', '.join(data_types)        
+        ar = numpy.core.records.fromarrays(data, names=names, formats=data_types)        
         return ar
+    
+    def add_temporal_stare(self):
+        numeric_timestamp = numpy.datetime64(self.time_stamp).astype(numpy.int64)        
+        stare_value = pystare.from_utc([numeric_timestamp], 27)
+        stare_temporal= numpy.full(shape=self.lats.shape, fill_value=stare_value, dtype='int64')
+        self.data['stare_temporal'] = stare_temporal
+        self.data_types['stare_temporal'] = 'int64'
+        
 
     def to_gpkg(self, file_name, bbox=None, n_rows=None, n_cols=None):
         df = self.to_df(bbox, bbox=bbox, n_rows=n_rows, n_cols=n_cols)
@@ -153,4 +165,9 @@ class DNB(VIIRSNC):
 
 
 if __name__ == '__main__':
-    pass
+    nc_path = '/home/griessbaum/CLDMSK_L2_VIIRS_SNPP.A2019177.0318.001.2019177130739.nc'
+    nc = CLDMSK(nc_path)    
+    nc.read()    
+    nc.add_temporal_stare()
+    print(nc.to_numpy())
+
