@@ -9,8 +9,8 @@ class Array:
         
     def exists(self):        
         arrays = self.db.iquery("list('arrays')", fetch=True)
-        names = arrays['name'].values
-        exists = self.name in names        
+        names = list(arrays['name'].values)
+        exists = self.name in names
         return exists
     
     def max_version(self):
