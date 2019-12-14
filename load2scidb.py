@@ -4,6 +4,7 @@ import argparse
 import scidb
 import glob
 import sys
+import eta
 sys.path.insert(1, '/home/griessbaum/Dropbox/UCSB/STARE_Project/STARE_build/src/')
 import pystare
 
@@ -43,15 +44,16 @@ if __name__ == '__main__':
     
     #nc_path = '/download/viirs/cldmsk/CLDMSK_L2_VIIRS_SNPP.A2016315.2306.001.2019071184303.nc'
     #load_file(nc_path)
+      
     
-    folder = '/download/viirs/cldmsk/'        
-    for nc_path in glob.glob(folder+'/.nc'):
+    folder = '/home/griessbaum/'   
+    files = sorted(glob.glob(folder+'*.nc'))
+    eta = eta.ETA(n_tot=len(files))
+    for nc_path in files:
+        eta.display(step='{name}'.format(name=nc_path.split('/')[-1]))
         load_file(nc_path)
         
-        
-        
-    
-    
-    
+
+
     
 
