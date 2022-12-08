@@ -1,7 +1,7 @@
 affine==2.3.0
 attrs==19.3.0
 backports.weakref==1.0.post1
-certifi==2019.11.28
+certifi==2022.12.7
 cftime==1.0.4.2
 chardet==3.0.4
 Click==7.0
