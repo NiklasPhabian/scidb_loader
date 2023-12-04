@@ -9,6 +9,7 @@ import shapely
 import geopandas
 import sys
 sys.path.insert(1, '/home/griessbaum/STARE/src/')
+sys.path.insert(1, '/home/griessbaum/Dropbox/UCSB/STARE_Project/STARE_build/src/')
 import pystare
 
 
@@ -25,6 +26,7 @@ class VIIRSNC:
         self.tsv_path = None
 
     def make_mask(self, bbox=None, n_rows=None, n_cols=None):
+        
         if bbox is not None:
             mask = numpy.zeros(self.lats.shape) == 0
             mask *= self.lats>bbox.lat_min
@@ -38,7 +40,9 @@ class VIIRSNC:
             mask = numpy.zeros(self.lats.shape) == 1
             mask[0:n_cols, :] = True
         else:
-            mask = numpy.zeros(self.lats.shape) == 0
+            mask = numpy.zeros(self.lats.shape) == 0            
+        mask *= self.lats > -999.9
+        mask *= self.lons > -999.9
         return mask
 
     def read(self):
@@ -97,10 +101,11 @@ class VIIRSNC:
                 
     def to_numpy(self, bbox=None, n_rows=None, n_cols=None):
         mask = self.make_mask(bbox, n_rows, n_cols)        
-        time_stamps = numpy.full(shape=self.lats[mask].shape, fill_value=self.time_stamp, dtype='datetime64[s]')                        
-        data = [self.lats[mask], self.lons[mask], time_stamps]        
-        names = ['lat', 'lon', 'time_stamp']
-        data_types = ['f8, f8', 'datetime64[s]']
+        time_stamps = numpy.full(shape=self.lats[mask].shape, fill_value=self.time_stamp, dtype='datetime64[s]')        
+        file_id= numpy.full(shape=self.lats[mask].shape, fill_value=self.file_name.split('.')[-2], dtype='int64')   
+        data = [self.lats[mask], self.lons[mask], time_stamps, file_id]        
+        names = ['lat', 'lon', 'time_stamp', 'file_id']
+        data_types = ['f8', 'f8', 'datetime64[s]', 'int64']
         for data_name in self.data:
             data.append(self.data[data_name][mask])        
             names.append(data_name)
@@ -115,8 +120,7 @@ class VIIRSNC:
         stare_value = pystare.from_utc([numeric_timestamp], 27)
         stare_temporal= numpy.full(shape=self.lats.shape, fill_value=stare_value, dtype='int64')
         self.data['stare_temporal'] = stare_temporal
-        self.data_types['stare_temporal'] = 'int64'
-        
+        self.data_types['stare_temporal'] = 'int64'        
 
     def to_gpkg(self, file_name, bbox=None, n_rows=None, n_cols=None):
         df = self.to_df(bbox, bbox=bbox, n_rows=n_rows, n_cols=n_cols)
@@ -167,7 +171,6 @@ class DNB(VIIRSNC):
 if __name__ == '__main__':
     nc_path = '/home/griessbaum/CLDMSK_L2_VIIRS_SNPP.A2019177.0318.001.2019177130739.nc'
     nc = CLDMSK(nc_path)    
-    nc.read()    
-    nc.add_temporal_stare()
-    print(nc.to_numpy())
+    nc.read()        
+    print(len(nc.to_numpy()))
 

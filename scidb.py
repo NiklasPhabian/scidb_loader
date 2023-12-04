@@ -1,4 +1,5 @@
 import scidbpy
+import time
 
 
 class Array:
@@ -7,7 +8,17 @@ class Array:
         self.name = name
         self.temp = temp
         
-    def exists(self):        
+    def try_iquery(self, query):
+        success = False
+        while not success:
+            try:
+                self.db.iquery(query)
+                success = True
+            except requests.exceptions.ConnectionError:
+                print('Connection Error. Retrying in 2 seconds')
+                time.sleep(2)
+        
+    def exists(self):
         arrays = self.db.iquery("list('arrays')", fetch=True)
         names = list(arrays['name'].values)
         exists = self.name in names
@@ -103,7 +114,7 @@ class Array:
                            target_name=target_array.name, 
                            attributes=target_array.attributes, 
                            dimensions=target_array.dimensions)
-        self.db.iquery(query)
+        self.try_iquery(query)
         
     def replace_attributes(self):
         query = '''store(
@@ -127,10 +138,8 @@ class Cldmsk(Array):
         name = 'cldmsk'
         Array.__init__(self, name=name, db=db)
         spatial_chunk = 1000*1000*1000*1000*1000
-        
-
         temporal_chunk = '*'        
-        self.attributes = "<time_stamp:datetime NOT NULL, Clear_Sky_Confidence:float NOT NULL, Integer_Cloud_Mask:int8 NOT NULL, lat:double NOT NULL, lon:double NOT NULL>" 
+        self.attributes = "<time_stamp:datetime NOT NULL, Clear_Sky_Confidence:float NOT NULL, Integer_Cloud_Mask:int8 NOT NULL, lat:double NOT NULL, lon:double NOT NULL, file_id:int64 NOT NULL>" 
         #self.attributes = '<Clear_Sky_Confidence:float NOT NULL, Integer_Cloud_Mask:int8 NOT NULL>'
         self.dimensions = '''[stare_spatial={low}:{high}:{overlap}:{spatial_chunk},
                               stare_temporal={low}:{high}:{overlap}:{temporal_chunk},
@@ -141,6 +150,3 @@ class Cldmsk(Array):
                                                  temporal_chunk=temporal_chunk,                                                  
                                                  overlap=0)
 
-
-
-#store(redimension(test, <lat:double NOT NULL, lon:double NOT NULL>[stare_spatial=0:*:0:1000000000000;synth=0:4]),c)
